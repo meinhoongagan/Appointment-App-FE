@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { BaseURL } from "../configs/api";
+import { BaseURL } from "../../configs/api";
 import { Calendar, Clock, ChevronRight, Menu, X, Plus, Trash, Edit, DollarSign } from "lucide-react";
-import ErrorBoundary from "../utils/Error-Boundary";
+import ErrorBoundary from "../../utils/Error-Boundary";
 
 // Define the Service interface
 interface Service {

@@ -57,7 +57,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
               <p className="text-gray-600 mb-6">
                 We apologize for the inconvenience. An unexpected error has occurred.
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              { this.state.error && (
                 <div className="mb-6 text-left w-full">
                   <div className="bg-gray-100 rounded p-4 mb-4">
                     <p className="text-red-600 font-mono text-sm">
