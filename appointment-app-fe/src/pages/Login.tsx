@@ -1,44 +1,43 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Loader2 } from "lucide-react";
 import { BaseURL } from "../configs/api"; // Adjust path based on your file structure
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       console.log("Logging in with:", { email, password });
-      console.log("BaseURL:", BaseURL); // Debugging line
+      console.log("BaseURL:", BaseURL);
       const response = await axios.post(`${BaseURL}/auth/login`, {
         email,
         password,
       });
 
-      // ✅ Handle login success (store token, redirect, etc.)
       console.log("Login successful:", response.data);
       
-      // Store the token in localStorage
       localStorage.setItem('token', response.data.token);
       
-      // Check user role and redirect accordingly
-      if (response.data.user.role_id === 2) { // Provider role
+      if (response.data.user.role_id === 2) {
         navigate('/service-dashboard');
-      } else if (response.data.user.role_id === 3) { // Consumer role
+      } else if (response.data.user.role_id === 3) {
         navigate('/consumer-dashboard');
       } else {
-        // For clients, you can redirect to their dashboard or home page
         navigate('/');
       }
-
     } catch (error: any) {
-      // ❌ Handle login error
       console.log(`${BaseURL}/auth/login`);
       console.error("Login failed:", error.response?.data || error.message);
       alert("Login Failed: " + (error.response?.data?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -67,6 +66,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
+                disabled={isLoading}
               />
               <input
                 type="password"
@@ -75,12 +75,21 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
+                disabled={isLoading}
               />
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-pink-400 to-purple-600 text-white py-2 rounded-xl hover:bg-opacity-80 transition duration-200"
+                className="w-full bg-gradient-to-r from-pink-400 to-purple-600 text-white py-2 rounded-xl hover:bg-opacity-80 transition duration-200 flex items-center justify-center"
+                disabled={isLoading}
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  'Login'
+                )}
               </button>
             </form>
             <p className="text-sm text-center text-gray-600 mt-4">
