@@ -12,6 +12,7 @@ import ConsumerOverview from "./pages/consumer/Overview";
 import FindServices from "./pages/consumer/FindServices";
 import ConsumerAppointments from "./pages/consumer/Appointments"; 
 import ConsumerProfile from "./pages/consumer/Profile";
+import BookProvider from "./pages/consumer/BookProvider";
 
 import './App.css'
 
@@ -36,6 +37,7 @@ function App() {
         <Route path="/consumer-dashboard" element={<ConsumerLayout />}>
           <Route index element={<ConsumerOverview />} />
           <Route path="find-services" element={<FindServices />} />
+          <Route path="book/:providerId" element={<BookProvider />} />
           <Route path="appointments" element={<ConsumerAppointments />} />
           <Route path="profile" element={<ConsumerProfile />} />
         </Route>

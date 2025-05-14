@@ -1,67 +1,130 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, Star, Users } from "lucide-react";
+import axios from "axios";
+import { BaseURL } from "../../configs/api";
 
-// Dummy data for statistics
-const stats = [
-  {
-    name: "Upcoming Appointments",
-    value: "3",
-    icon: Calendar,
-    change: "+1",
-    changeType: "increase",
-  },
-  {
-    name: "Total Bookings",
-    value: "12",
-    icon: Clock,
-    change: "+4",
-    changeType: "increase",
-  },
-  {
-    name: "Average Rating",
-    value: "4.5",
-    icon: Star,
-    change: "+0.3",
-    changeType: "increase",
-  },
-  {
-    name: "Favorite Providers",
-    value: "5",
-    icon: Users,
-    change: "+2",
-    changeType: "increase",
-  },
-];
+// Define interfaces for the data structures
+interface Appointment {
+  id: number;
+  provider: {
+    name: string;
+  };
+  service: {
+    name: string;
+  };
+  start_time: string;
+  status: string;
+}
 
-// Dummy data for recent appointments
-const recentAppointments = [
-  {
-    id: 1,
-    providerName: "John's Salon",
-    service: "Haircut",
-    date: "2024-03-20",
-    time: "10:00 AM",
-    status: "Confirmed",
-  },
-  {
-    id: 2,
-    providerName: "Beauty Spa",
-    service: "Facial",
-    date: "2024-03-21",
-    time: "2:00 PM",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    providerName: "Massage Center",
-    service: "Full Body Massage",
-    date: "2024-03-22",
-    time: "11:00 AM",
-    status: "Confirmed",
-  },
-];
+interface ReviewStats {
+  total_reviews: number;
+  average_rating: number;
+}
+
+interface Stat {
+  name: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  change: string;
+  changeType: "increase" | "decrease";
+}
 
 const Overview = () => {
+  // State for stats and appointments
+  const [stats, setStats] = useState<Stat[]>([]);
+  const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Assume token is stored in localStorage or a context
+  const token = localStorage.getItem("token") || ""; // Adjust based on your auth setup
+
+  // Fetch data when component mounts
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch all appointments for the user
+        const appointmentsResponse = await axios.get(`${BaseURL}/appointments`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const appointments: Appointment[] = appointmentsResponse.data;
+
+        // Filter upcoming appointments (start_time > now)
+        const now = new Date();
+        const upcomingAppointments = appointments.filter((appt) => new Date(appt.start_time) > now);
+        const totalBookings = appointments.length;
+        const upcomingCount = upcomingAppointments.length;
+
+        // Fetch review stats (using a placeholder provider ID; adjust as needed)
+        const reviewStatsResponse = await axios.get(`${BaseURL}/providers/1/review-stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const reviewStats: ReviewStats = reviewStatsResponse.data;
+
+        // Mock favorite providers count (replace with actual API call if available)
+        const favoriteProvidersCount = 5; // Replace with /providers/favorites endpoint if available
+
+        // Update stats
+        setStats([
+          {
+            name: "Upcoming Appointments",
+            value: upcomingCount.toString(),
+            icon: Calendar,
+            change: `+${upcomingCount}`,
+            changeType: "increase",
+          },
+          {
+            name: "Total Bookings",
+            value: totalBookings.toString(),
+            icon: Clock,
+            change: `+${totalBookings}`,
+            changeType: "increase",
+          },
+          {
+            name: "Average Rating",
+            value: reviewStats.average_rating.toFixed(1),
+            icon: Star,
+            change: `+${(reviewStats.average_rating || 0).toFixed(1)}`,
+            changeType: "increase",
+          },
+          {
+            name: "Favorite Providers",
+            value: favoriteProvidersCount.toString(),
+            icon: Users,
+            change: `+${favoriteProvidersCount}`,
+            changeType: "increase",
+          },
+        ]);
+
+        // Set recent appointments (limit to 3, keep as Appointment type)
+        setRecentAppointments(appointments.slice(0, 3));
+
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load dashboard data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [token]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-600">{error}</div>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -118,22 +181,27 @@ const Overview = () => {
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <div className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 flex items-center justify-center text-white">
-                        {appointment.providerName.charAt(0)}
+                        {appointment.provider.name.charAt(0)}
                       </div>
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">
-                        {appointment.providerName}
+                        {appointment.provider.name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {appointment.service}
+                        {appointment.service.name}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-sm text-gray-500">
-                      <div>{appointment.date}</div>
-                      <div>{appointment.time}</div>
+                      <div>{new Date(appointment.start_time).toLocaleDateString()}</div>
+                      <div>
+                        {new Date(appointment.start_time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
                     </div>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -157,7 +225,7 @@ const Overview = () => {
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               View all appointments
-              <span aria-hidden="true"> &rarr;</span>
+              <span aria-hidden="true"> →</span>
             </Link>
           </div>
         </div>
@@ -166,4 +234,4 @@ const Overview = () => {
   );
 };
 
-export default Overview; 
+export default Overview;
