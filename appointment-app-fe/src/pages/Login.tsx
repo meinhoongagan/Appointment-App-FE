@@ -25,10 +25,12 @@ const Login = () => {
       
       localStorage.setItem('token', response.data.token);
       
-      if (response.data.user.role_id === 2) {
+      if (response.data.user.role_id === 2 || response.data.user.role_id === 1) {
         navigate('/service-dashboard');
       } else if (response.data.user.role_id === 3) {
         navigate('/consumer-dashboard');
+      } else if (response.data.user.role_id === 4) {
+        navigate('/receptionist-dashboard');
       } else {
         navigate('/');
       }

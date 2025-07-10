@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, MapPin, Calendar, Clock, Repeat, Check } from "lucide-react";
+import { Star, MapPin, Check } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { BaseURL } from "../../configs/api";
 

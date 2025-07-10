@@ -77,7 +77,7 @@ const ConsumerProfile = () => {
         phone: profile.phone || null,
         address: profile.address || null,
       });
-      const response = await axios.patch(
+      const response = await axios.put(
         `${BaseURL}/auth/me`,
         {
           name: profile.name,

@@ -67,11 +67,11 @@ interface QuickAction {
   color: string;
 }
 
-interface QuickActionsResponse {
-  quick_actions: QuickAction[];
-  user_id: number;
-  role: string;
-}
+// interface QuickActionsResponse {
+//   quick_actions: QuickAction[];
+//   user_id: number;
+//   role: string;
+// }
 
 const Overview: React.FC = () => {
   const navigate = useNavigate();
@@ -82,6 +82,9 @@ const Overview: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState('week');
+
+  // const user = JSON.parse(localStorage.getItem("user") || '{}');
+  // const isReceptionist = user?.role_id === 4;
 
   // Fetch data from APIs
   useEffect(() => {

@@ -7,12 +7,16 @@ import Overview from "./pages/service-provider/Overview";
 import Appointments from "./pages/service-provider/Appointments";
 import Services from "./pages/service-provider/Services";
 import Profile from "./pages/service-provider/Profile";
+import Receptionists from "./pages/service-provider/Receptionists";
 import ConsumerLayout from "./pages/consumer/Dashboard";
 import ConsumerOverview from "./pages/consumer/Overview";
 import FindServices from "./pages/consumer/FindServices";
 import ConsumerAppointments from "./pages/consumer/Appointments"; 
 import ConsumerProfile from "./pages/consumer/Profile";
 import BookProvider from "./pages/consumer/BookProvider";
+// import DashboardHome from "./pages/service-provider/DashboardHome";
+import CalenderPage from "./pages/service-provider/Calender";
+import ReceptionistDashboard from "./pages/receptionist/Dashboard";
 
 import './App.css'
 
@@ -27,10 +31,13 @@ function App() {
 
         {/* Service Provider routes */}
         <Route path="/service-dashboard" element={<ServiceProviderLayout />}>
-          <Route index element={<Overview />} />
+          {/* <Route index element={<DashboardHome />} /> */}
+          <Route path="overview" element={<Overview />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="services" element={<Services />} />
+          <Route path="receptionists" element={<Receptionists />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="calender" element={<CalenderPage />} />
         </Route>
 
         {/* Consumer routes */}
@@ -41,6 +48,9 @@ function App() {
           <Route path="appointments" element={<ConsumerAppointments />} />
           <Route path="profile" element={<ConsumerProfile />} />
         </Route>
+
+        {/* Receptionist routes */}
+        <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
 
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />

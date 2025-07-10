@@ -3,19 +3,20 @@ import { Search, Star, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BaseURL } from "../../configs/api";
 
-interface Service {
-  id: number;
-  name: string;
-}
-
 interface Provider {
   id: number;
   name: string;
-  rating: number;
-  reviews: number;
   location: string;
-  services: Service[];
-  image: string;
+}
+
+interface Service {
+  id: number;
+  name: string;
+  provider: Provider;
+  price?: number;
+  description?: string;
+  rating?: number;
+  reviews?: number;
 }
 
 interface Category {
@@ -26,8 +27,9 @@ interface Category {
 const FindServices = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [providers, setProviders] = useState<Provider[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Added loading state
   const navigate = useNavigate();
 
   const categories: Category[] = [
@@ -39,7 +41,8 @@ const FindServices = () => {
   ];
 
   useEffect(() => {
-    const fetchProviders = async () => {
+    const fetchServices = async () => {
+      setLoading(true); // Set loading to true at the start
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No authentication token found");
@@ -49,56 +52,79 @@ const FindServices = () => {
           "Content-Type": "application/json",
         };
 
-        let url = `${BaseURL}/providers?page=1&limit=10`;
+        // Adjusted endpoint to /services (assuming /provider/services was a typo)
+        let url = `${BaseURL}/provider/services?page=1&limit=10`;
         if (searchQuery) {
-          url = `${BaseURL}/providers/search/service?q=${encodeURIComponent(searchQuery)}`;
+          url = `${BaseURL}/services/search?q=${encodeURIComponent(searchQuery)}`;
         } else if (selectedCategory !== "all") {
-          url = `${BaseURL}/category/${selectedCategory}`;
+          url = `${BaseURL}/category/${selectedCategory}/services`;
         }
 
+        console.log("Fetching services from:", url); // Debug: Log the URL
         const response = await fetch(url, { headers });
-        if (!response.ok) throw new Error("Failed to fetch providers");
+        if (!response.ok) throw new Error(`Failed to fetch services: ${response.statusText}`);
         const data = await response.json();
-        const fetchedProviders = data.providers || [];
+        console.log("API response:", data); // Debug: Log the raw response
 
-        const enhancedProviders: Provider[] = await Promise.all(
-          fetchedProviders.map(async (provider: any): Promise<Provider> => {
-            const servicesResponse = await fetch(`${BaseURL}/providers/${provider.id}/services`, { headers });
-            const servicesData = servicesResponse.ok ? await servicesResponse.json() : [];
-            const services: Service[] = servicesData.map((service: any) => ({
-              id: service.id,
-              name: service.name || "Unknown",
-            }));
+        const fetchedServices = Array.isArray(data.services) ? data.services : data || [];
+        if (!fetchedServices.length) {
+          console.warn("No services found in response"); // Debug: Warn if no services
+        }
 
-            const reviewStatsResponse = await fetch(`${BaseURL}/providers/${provider.id}/review-stats`, { headers });
-            const reviewStats = reviewStatsResponse.ok
-              ? await reviewStatsResponse.json()
-              : { average_rating: 0, total_reviews: 0 };
+        const enhancedServices: Service[] = await Promise.all(
+          fetchedServices.map(async (service: any): Promise<Service> => {
+            // Fetch provider details
+            let providerData: any = {};
+            try {
+              const providerResponse = await fetch(`${BaseURL}/providers/${service.provider_id}`, { headers });
+              providerData = providerResponse.ok ? await providerResponse.json() : {};
+              console.log(`Provider data for service ${service.id}:`, providerData); // Debug
+            } catch (err) {
+              console.error(`Failed to fetch provider for service ${service.id}:`, err); // Debug
+            }
+
+            // Fetch review stats
+            let reviewStats = { average_rating: 0, total_reviews: 0 };
+            try {
+              const reviewStatsResponse = await fetch(`${BaseURL}/services/${service.id}/review-stats`, { headers });
+              reviewStats = reviewStatsResponse.ok ? await reviewStatsResponse.json() : reviewStats;
+              console.log(`Review stats for service ${service.id}:`, reviewStats); // Debug
+            } catch (err) {
+              console.error(`Failed to fetch review stats for service ${service.id}:`, err); // Debug
+            }
 
             return {
-              id: provider.id,
-              name: provider.business_details?.business_name || provider.name,
+              id: service.id || 0,
+              name: service.name || "Unknown Service",
+              provider: {
+                id: providerData.id || 0,
+                name: providerData.business_details?.business_name || providerData.name || "Unknown Provider",
+                location: providerData.business_details?.city || providerData.business_details?.address || "Unknown",
+              },
+              price: service.price || undefined,
+              description: service.description || undefined,
               rating: reviewStats.average_rating || 0,
               reviews: reviewStats.total_reviews || 0,
-              location: provider.business_details?.city || provider.business_details?.address || "Unknown",
-              services,
-              image: provider.business_details?.logo_url || "https://via.placeholder.com/150",
             };
           })
         );
 
-        setProviders(enhancedProviders);
+        console.log("Enhanced services:", enhancedServices); // Debug: Log final services
+        setServices(enhancedServices);
         setError(null);
       } catch (err: any) {
-        setError(err.message);
+        console.error("Error fetching services:", err); // Debug: Log error
+        setError(err.message || "An error occurred while fetching services");
+      } finally {
+        setLoading(false); // Set loading to false when done
       }
     };
 
-    fetchProviders();
+    fetchServices();
   }, [searchQuery, selectedCategory]);
 
-  const handleBookService = (providerId: number, serviceId?: number) => {
-    navigate(`/book/${providerId}${serviceId ? `/${serviceId}` : ""}`);
+  const handleBookService = (providerId: number, serviceId: number) => {
+    navigate(`/book/${providerId}/${serviceId}`);
   };
 
   return (
@@ -112,6 +138,9 @@ const FindServices = () => {
           <span className="block sm:inline">{error}</span>
         </div>
       )}
+      {loading && (
+        <div className="text-center text-gray-500">Loading services...</div>
+      )}
       <div className="bg-white shadow rounded-lg p-4">
         <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
           <div className="flex-1">
@@ -121,7 +150,7 @@ const FindServices = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search services or providers..."
+                placeholder="Search services..."
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -146,46 +175,43 @@ const FindServices = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {providers.length === 0 ? (
-          <div className="col-span-full text-center text-gray-500">No providers found.</div>
+        {services.length === 0 && !loading ? (
+          <div className="col-span-full text-center text-gray-500">No services found.</div>
         ) : (
-          providers.map((provider) => (
+          services.map((service) => (
             <div
-              key={provider.id}
+              key={service.id}
               className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200"
             >
-              <div className="h-48 w-full">
-                <img src={provider.image} alt={provider.name} className="h-full w-full object-cover" />
-              </div>
               <div className="p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900">{provider.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{service.name}</h3>
                   <div className="flex items-center">
                     <Star className="h-5 w-5 text-yellow-400" />
-                    <span className="ml-1 text-sm text-gray-600">{provider.rating.toFixed(1)}</span>
+                    <span className="ml-1 text-sm text-gray-600">{service.rating?.toFixed(1) || "N/A"}</span>
                   </div>
+                </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <span className="font-medium">Provider:</span> {service.provider.name}
                 </div>
                 <div className="mt-2 flex items-center text-sm text-gray-500">
                   <MapPin className="h-4 w-4 mr-1" />
-                  {provider.location}
+                  {service.provider.location}
                 </div>
-                <div className="mt-2">
-                  <div className="flex flex-wrap gap-2">
-                    {provider.services.map((service) => (
-                      <button
-                        key={service.id}
-                        onClick={() => handleBookService(provider.id, service.id)}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
-                      >
-                        {service.name}
-                      </button>
-                    ))}
+                {service.description && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    <span className="font-medium">Description:</span> {service.description}
                   </div>
-                </div>
+                )}
+                {service.price && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    <span className="font-medium">Price:</span> ${service.price.toFixed(2)}
+                  </div>
+                )}
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">{provider.reviews} reviews</div>
+                  <div className="text-sm text-gray-500">{service.reviews || 0} reviews</div>
                   <button
-                    onClick={() => handleBookService(provider.id)}
+                    onClick={() => handleBookService(service.provider.id, service.id)}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-400 to-purple-600 hover:from-pink-500 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Book Now
