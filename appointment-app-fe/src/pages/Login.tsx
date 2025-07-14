@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Loader2 } from "lucide-react";
-import { BaseURL } from "../configs/api"; // Adjust path based on your file structure
+import { Loader2, AlertCircle, Smartphone } from "lucide-react";
+import { BaseURL } from "../configs/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
+    
     try {
       console.log("Logging in with:", { email, password });
       console.log("BaseURL:", BaseURL);
@@ -25,19 +28,30 @@ const Login = () => {
       
       localStorage.setItem('token', response.data.token);
       
-      if (response.data.user.role_id === 2 || response.data.user.role_id === 1) {
+      // Check user role and redirect accordingly
+      const roleId = response.data.user.role_id;
+      
+      if (roleId === 2) {
+        // Service Provider
         navigate('/service-dashboard');
-      } else if (response.data.user.role_id === 3) {
-        navigate('/consumer-dashboard');
-      } else if (response.data.user.role_id === 4) {
+      } else if (roleId === 4) {
+        // Receptionist
         navigate('/receptionist-dashboard');
+      } else if (roleId === 3) {
+        // Consumer - show app download message
+        setError("Consumers should use our mobile app. Please download the app to book appointments.");
+        localStorage.removeItem('token'); // Remove token since they shouldn't access web
+        return;
       } else {
-        navigate('/');
+        setError("Invalid user role. Please contact support.");
+        localStorage.removeItem('token');
+        return;
       }
+      
     } catch (error: any) {
       console.log(`${BaseURL}/auth/login`);
       console.error("Login failed:", error.response?.data || error.message);
-      alert("Login Failed: " + (error.response?.data?.message || "Unknown error"));
+      setError(error.response?.data?.error || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +74,14 @@ const Login = () => {
         <div className="container mx-auto px-6 flex justify-center items-center">
           <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
             <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+            
+            {error && (
+              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-4">
               <input
                 type="email"
@@ -94,12 +116,41 @@ const Login = () => {
                 )}
               </button>
             </form>
-            <p className="text-sm text-center text-gray-600 mt-4">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-gradient font-medium hover:underline">
-                Sign up
+            
+            <div className="mt-6 text-center space-y-3">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-purple-600 hover:text-purple-800 transition block"
+              >
+                Forgot Password?
               </Link>
-            </p>
+              
+              <p className="text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Link to="/signup" className="text-purple-600 font-medium hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+
+            {/* Consumer App Download Notice */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center mb-2">
+                <Smartphone className="w-5 h-5 text-blue-500 mr-2" />
+                <h3 className="text-sm font-medium text-blue-800">For Consumers</h3>
+              </div>
+              <p className="text-xs text-blue-700">
+                If you're a customer looking to book appointments, please download our mobile app for the best experience.
+              </p>
+              <div className="mt-2 flex space-x-2">
+                <button className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">
+                  Download iOS App
+                </button>
+                <button className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition">
+                  Download Android App
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

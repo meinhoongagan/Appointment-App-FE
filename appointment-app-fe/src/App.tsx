@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyOTP from "./pages/VerifyOTP";
+import VerifyRegistrationOTP from "./pages/VerifyRegistrationOTP";
 import ServiceProviderLayout from "./pages/service-provider/Dashboard";
 import Overview from "./pages/service-provider/Overview";
 import Appointments from "./pages/service-provider/Appointments";
@@ -28,6 +31,9 @@ function App() {
         <Route path="/" element={<Landing/>}/>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
+        <Route path="/verify-registration-otp" element={<VerifyRegistrationOTP />} />
 
         {/* Service Provider routes */}
         <Route path="/service-dashboard" element={<ServiceProviderLayout />}>
@@ -52,8 +58,8 @@ function App() {
         {/* Receptionist routes */}
         <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
 
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Catch all route - redirect to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
