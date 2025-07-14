@@ -56,8 +56,8 @@ const Landing = () => {
       >
         <div className="container mx-auto px-6 flex justify-between items-center">
           <Link to="/" className="flex items-center">
+            <img src="/vite.svg" alt="AppointEase Logo" className="h-8 w-8 mr-2" />
             <h1 className={`text-2xl font-bold flex items-center ${isScrolled ? "text-gray-800" : "text-white"}`}>
-              <span className="text-3xl mr-2">✨</span> 
               <span className="bg-gradient-to-r from-pink-400 to-purple-600 bg-clip-text text-transparent">AppointEase</span>
             </h1>
           </Link>
