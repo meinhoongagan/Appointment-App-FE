@@ -30,8 +30,10 @@ const Login = () => {
       
       // Check user role and redirect accordingly
       const roleId = response.data.user.role_id;
-      
-      if (roleId === 2) {
+      if (roleId === 1) {
+        navigate('/service-dashboard');
+      }
+      else if (roleId === 2) {
         // Service Provider
         navigate('/service-dashboard');
       } else if (roleId === 4) {
